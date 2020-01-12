@@ -39,13 +39,13 @@
 
 ************************************************************/
 
-typedef enum MP3_HEADER_INDICIES_T
+typedef enum MP3_TAG_HEADER_INDICIES_T
 {
     TAG_IDENTIFICATION_INDEX = 0,
     VERSION_INDEX = 3,
     FLAGS_INDEX = 5,
     SIZE_INDEX = 6
-}MP3_HEADER_INDICIES;
+}MP3_TAG_HEADER_INDICIES;
 
 typedef enum TAG_FLAGS_T
 {
@@ -268,15 +268,7 @@ void printFileAttributes(void)
 
 uint32_t tagSizeToIntDecode(uint8_t* bytes)
 {
-    uint32_t val = 0u;
-    /// @todo make inline assembly for this....
-    for(int i = 0 ; i < 4 ; ++i)
-    {
-        // The work
-        val <<= 7;
-        val |= (bytes[i] & 0x7F);
-    }
-    return val;
+    return (((bytes[0] & 0x7F) << 21) | ((bytes[1] & 0x7F) << 14) | ((bytes[2] & 0x7F) << 7) | (bytes[3] & 0x7F));
 }
 
 void newLine(void)
@@ -288,7 +280,7 @@ void findTagHeader(FILE* mp3FilePtr, long fileIndex)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
 
-    switch((MP3_HEADER_INDICIES)fileIndex)
+    switch((MP3_TAG_HEADER_INDICIES)fileIndex)
     {
     case TAG_IDENTIFICATION_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
