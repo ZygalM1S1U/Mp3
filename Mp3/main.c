@@ -270,11 +270,11 @@ uint32_t tagSizeToIntDecode(uint8_t* bytes)
 {
     uint32_t val = 0u;
     /// @todo make inline assembly for this....
-    for (int i = 0 ; i < 4 ; i++)
+    for(int i = 0 ; i < 4 ; ++i)
     {
         // The work
         val <<= 7;
-        val += (bytes[i] & 0x7F);
+        val |= (bytes[i] & 0x7F);
     }
     return val;
 }
