@@ -1,2 +1,12 @@
+Inc/mp3decode.h
+Src/mp3decode.c
+tt.mp3
+Inc/main.h
+Inc/mp3standard.h
+Src/PF.mp3
+Src/audience.mp3
+Src/indyboot.mp3
+Src/indydown.mp3
+Src/main.c
 main.h
 main.c
