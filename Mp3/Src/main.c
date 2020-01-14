@@ -21,37 +21,8 @@ void mp3FileOpen(char* fileName);
 /// @brief This function will parse a file in memory from the fp
 void mp3Parse(FILE* mp3FilePtr);
 
-/// @brief This function will find all fields of information
-void getFieldInformation(FILE *mp3FilePtr, uint8_t *dataNeeded, uint8_t size);
-
 /// @brief Print the file struct for viewing on the console
 void printFileAttributes(void);
-
-/// @brief converts the tag size into an int for a tag
-uint32_t tagSizeToIntDecode(uint8_t* bytes);
-
-/// @brief Creates a new line via printf
-void newLine(void);
-
-/// @brief Finds a tag header
-void findTagHeader(FILE* mp3FilePtr, long fileIndex);
-
-/// @brief Parses the text frame header and fills in the appropriate information
-void frameIDHandler(FILE* mp3FilePtr, char currentChar);
-
-/// @brief Print the current frame
-void printFrameHandler(void);
-
-/// @brief Decode the frame header
-void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex);
-
-__attribute__((__packed__)) struct fileAttributes_t
-{
-    char filename[MAX_FILE_SIZE];
-    uint8_t* fileContent; /// @todo See if this is needed
-    long fileSize;
-    mp3Attributes mp3Attributes_u;
-};
 
 // Static instance of struct
 static struct fileAttributes_t fileAttributes;
@@ -76,7 +47,7 @@ int main(void)
 
 void initializeProgram(void)
 {
-    memset(fileAttributes.filename, 0u, MAX_FILE_SIZE);
+    memset(fileAttributes.filename, 0u, MAX_FILENAME_SIZE);
     fileAttributes.fileSize = 0u;
 }
 
@@ -112,7 +83,7 @@ void mp3Parse(FILE* mp3FilePtr)
 {
     long fileIndex, newFrameIndex, frameOffset = 0;
     // print the file name
-    for(int i = 0; i < MAX_FILE_SIZE; ++i)
+    for(int i = 0; i < MAX_FILENAME_SIZE; ++i)
         printf("%c", fileAttributes.filename[i]);
     newLine();
     char c = 0;
@@ -141,7 +112,7 @@ void mp3Parse(FILE* mp3FilePtr)
         {
             // Frame has been found, pull the frame header
             decodeFrameHeader(mp3FilePtr, fileIndex, newFrameIndex);
-             ++newFrameIndex;
+            ++newFrameIndex;
         }
 
 
@@ -154,28 +125,13 @@ void mp3Parse(FILE* mp3FilePtr)
     printFileAttributes();
 }
 
-void getFieldInformation(FILE* mp3FilePtr, uint8_t* dataNeeded, uint8_t size)
-{
-    // Get original file offset
-    long fileOriginalSize = ftell(mp3FilePtr);
-
-    // Grab the data you need
-    for(int j = 0; j < size; ++j)
-    {
-        dataNeeded[j] = fgetc(mp3FilePtr);
-    }
-
-    // Rewind the file pointer
-    fseek(mp3FilePtr, 0, (int)fileOriginalSize);
-}
-
 void printFileAttributes(void)
 {
     if(fileOpen)
     {
         // Print the file name
         printf("File Name: ");
-        for(int i = 0; i < MAX_FILE_SIZE; ++i)
+        for(int i = 0; i < MAX_FILENAME_SIZE; ++i)
             printf("%c", fileAttributes.filename[i]);
         newLine();  // New line
 
@@ -232,132 +188,5 @@ void printFileAttributes(void)
                    tagAlterPres, fileAlterPres, RO, Compression, Encryption, GI);
         }
 
-    }
-}
-
-uint32_t tagSizeToIntDecode(uint8_t* bytes)
-{
-    return (((bytes[0] & 0x7F) << 21) | ((bytes[1] & 0x7F) << 14) | ((bytes[2] & 0x7F) << 7) | (bytes[3] & 0x7F));
-}
-
-void newLine(void)
-{
-    printf("\n");
-}
-
-void findTagHeader(FILE* mp3FilePtr, long fileIndex)
-{
-    uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
-
-    switch((MP3_TAG_HEADER_INDICIES)fileIndex)
-    {
-    case TAG_IDENTIFICATION_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.fileIdentifier, fileInforRetrieve, 3);
-        break;
-    case TAG_VERSION_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 2);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.version, fileInforRetrieve, 2);
-        break;
-    case TAG_FLAGS_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 1);
-        fileAttributes.mp3Attributes_u.currentTagHeader.flags = fileInforRetrieve[0];
-        break;
-    case TAG_SIZE_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.size, fileInforRetrieve, 4);
-        fileAttributes.mp3Attributes_u.currentTagHeader.tagSizeUnPacked = tagSizeToIntDecode(fileAttributes.mp3Attributes_u.currentTagHeader.size);
-        if(*(uint32_t*)fileAttributes.mp3Attributes_u.currentTagHeader.size > 1)    // Per id3 spec, atleast one byte for tags
-            tagFound = true;
-        break;
-    default:
-        // Nothing left to handle in the header...
-        break;
-    }
-}
-
-void frameIDHandler(FILE* mp3FilePtr, char currentChar)
-{
-    uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
-
-    switch((FRAME_TYPES)currentChar)
-    {
-    case IPLS_FRAME:
-        // Only one frame type with 'I'
-        fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameType = IPLS_FRAME;
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId, "IPLS", 4);
-        printf("IPLS Frame found\n");
-        frameFound = true;
-        break;
-    case URL_FRAME:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
-        printf("URL Frame found\n");
-        frameFound = true;
-        break;
-    case TEXT_FRAME:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
-        fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[0] = TEXT_FRAME;
-        memcpy(&fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[1], fileInforRetrieve, 3);
-        printf("Text Frame found\n");
-        frameFound = true;
-        break;
-    default:
-        break;
-    }
-}
-
-void printFrameHandler(void)
-{
-
-    /*
-    // Print the current frame
-    switch(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameType)
-    {
-    case :
-        break;
-    default:
-        break;
-    }*/
-}
-
-/*
- *
-typedef enum FRAME_TYPES_T
-{
-    TEXT_FRAME = 0x54, // T in ASCII
-    URL_FRAME  = 0x57, // W in ASCII
-    IPLS_FRAME = 0x49, // I in ASCII, involved people list
-
-}FRAME_TYPES;
- * */
-
-void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex)
-{
-    uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
-    printf("frameIndex: %lu\n", fileIndex);
-    printf("File Index - Frame Offset: %lu\n", frameIndex);
-    switch((MP3_FRAME_HEADER_INDICIES)frameIndex)
-    {
-    case FRAME_IDENTIFICATION_INDEX:
-        // Already handled :)
-        break;
-    case FRAME_SIZE_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
-        // No more weird size decoding :D
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize, fileInforRetrieve, 4);
-        printf("size individual fields: ");
-        for(int i = 0; i < 4; ++i)
-            printf(" 0x%02X ", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
-        newLine();
-        if(*(uint32_t*)fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize > 1)    // Per id3 spec, atleast one byte for frames
-            validFrame = true;
-        break;
-    case FRAME_FLAGS_INDEX:
-        getFieldInformation(mp3FilePtr, fileInforRetrieve, 2);
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags, fileInforRetrieve, 2);
-        break;
-    default:
-        // Nothing left to handle in the header...
-        break;
     }
 }

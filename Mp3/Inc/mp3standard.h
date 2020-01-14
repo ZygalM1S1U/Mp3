@@ -2,7 +2,7 @@
 #define _MP3_STANDARD_H__
 
 
-#define MAX_FILE_SIZE               25
+#define MAX_FILENAME_SIZE           25
 #define MP3_FILE_ID_FRAME_SIZE      10
 #define MP3_MAX_ID_FIELD_SIZE       4
 #define MP3_MAX_FRAME_TYPE_SIZE     3
