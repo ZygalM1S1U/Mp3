@@ -43,7 +43,7 @@ void frameIDHandler(FILE* mp3FilePtr, char currentChar);
 void printFrameHandler(void);
 
 /// @brief Decode the frame header
-void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameOffset);
+void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex);
 
 __attribute__((__packed__)) struct fileAttributes_t
 {
@@ -110,7 +110,7 @@ void mp3FileOpen(char* fileName)
 
 void mp3Parse(FILE* mp3FilePtr)
 {
-    long fileIndex, frameOffset = 0;
+    long fileIndex, newFrameIndex, frameOffset = 0;
     // print the file name
     for(int i = 0; i < MAX_FILE_SIZE; ++i)
         printf("%c", fileAttributes.filename[i]);
@@ -131,13 +131,17 @@ void mp3Parse(FILE* mp3FilePtr)
 
             if(frameFound)
             {
+                printf("File Index when setting a frame: %lu\n", fileIndex);
                 frameOffset = fileIndex-4;
+                newFrameIndex = fileIndex - frameOffset - 4;
+                printf("New Frame Index: %lu\n", newFrameIndex);
             }
         }
         else
         {
             // Frame has been found, pull the frame header
-            decodeFrameHeader(mp3FilePtr, fileIndex, frameOffset);
+            decodeFrameHeader(mp3FilePtr, fileIndex, newFrameIndex);
+             ++newFrameIndex;
         }
 
 
@@ -327,11 +331,12 @@ typedef enum FRAME_TYPES_T
 }FRAME_TYPES;
  * */
 
-void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameOffset)
+void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
-
-    switch((MP3_FRAME_HEADER_INDICIES)(fileIndex-frameOffset))
+    printf("frameIndex: %lu\n", fileIndex);
+    printf("File Index - Frame Offset: %lu\n", frameIndex);
+    switch((MP3_FRAME_HEADER_INDICIES)frameIndex)
     {
     case FRAME_IDENTIFICATION_INDEX:
         // Already handled :)
@@ -342,7 +347,8 @@ void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameOffset)
         memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize, fileInforRetrieve, 4);
         printf("size individual fields: ");
         for(int i = 0; i < 4; ++i)
-            printf(" 0x%02X", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
+            printf(" 0x%02X ", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
+        newLine();
         if(*(uint32_t*)fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize > 1)    // Per id3 spec, atleast one byte for frames
             validFrame = true;
         break;

@@ -9,6 +9,14 @@
 #define MP3_TAG_HEADER_OFFSET       0x0A
 #define MP3_FRAME_HEADER_OFFSET
 
+
+/// @todo figure out if this is needed.
+typedef enum GENRES_T
+{
+    BLUES = 0
+
+}GENRES;
+
 /// @note MP3 Notes
 /// @section Tag Header Flags
 /*********************************************************
@@ -217,10 +225,23 @@ typedef struct __attribute__((__packed__)) mp3CurrentFrame_t
     uint16_t frameCRC;
 }mp3CurrentFrame;
 
+typedef struct __attribute__((__packed__)) mp3FileInformation
+{
+    char artistInfo[30];
+    char songInfo[30];
+    char fileGenre[30];
+    uint64_t trackLength;
+
+
+
+}mp3FileInfo;
+
+
 typedef struct __attribute__((__packed__)) mp3Attributes_t
 {
     mp3FileTagHeader currentTagHeader;
     mp3CurrentFrame currentFrame;
+    mp3FileInfo trackFileInfo;
 
 }mp3Attributes;
 
