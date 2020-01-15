@@ -42,11 +42,7 @@ int main(void)
 
 void initializeProgram(void)
 {
-    memset(fileAttributes.filename, 0u, MAX_FILENAME_SIZE);
-    fileAttributes.fileSize = 0u;
-    fileAttributes.frameCount.tagFound = false;
-    fileAttributes.frameCount.frameFound = false;
-    fileAttributes.frameCount.validFrame = false;
+    memset(&fileAttributes, 0u, sizeof(fileAttributes));
 }
 
 void mp3FileOpen(char* fileName)
