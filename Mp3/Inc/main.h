@@ -8,14 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "mp3decode.h"
-
-__attribute__((__packed__)) struct fileAttributes_t
-{
-    char filename[MAX_FILENAME_SIZE];
-    uint8_t* fileContent; /// @todo See if this is needed
-    long fileSize;
-    mp3Attributes mp3Attributes_u;
-};
+#include "mp3standard.h"
 
 /// @brief This function will print the current time
 /// @note  This should only be run at start-up

@@ -1,9 +1,10 @@
 #include "../Inc/mp3decode.h"
+#include "../Inc/main.h"
 
 /// @brief converts the tag size into an int for a tag
 uint32_t tagSizeToIntDecode(uint8_t* bytes);
 
-void findTagHeader(FILE* mp3FilePtr, long fileIndex)
+void findTagHeader(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, long fileIndex)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
 
@@ -11,22 +12,22 @@ void findTagHeader(FILE* mp3FilePtr, long fileIndex)
     {
     case TAG_IDENTIFICATION_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.fileIdentifier, fileInforRetrieve, 3);
+        memcpy(fileAttributes->mp3Attributes_u.currentTagHeader.fileIdentifier, fileInforRetrieve, 3);
         break;
     case TAG_VERSION_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 2);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.version, fileInforRetrieve, 2);
+        memcpy(fileAttributes->mp3Attributes_u.currentTagHeader.version, fileInforRetrieve, 2);
         break;
     case TAG_FLAGS_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 1);
-        fileAttributes.mp3Attributes_u.currentTagHeader.flags = fileInforRetrieve[0];
+        fileAttributes->mp3Attributes_u.currentTagHeader.flags = fileInforRetrieve[0];
         break;
     case TAG_SIZE_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
-        memcpy(fileAttributes.mp3Attributes_u.currentTagHeader.size, fileInforRetrieve, 4);
-        fileAttributes.mp3Attributes_u.currentTagHeader.tagSizeUnPacked = tagSizeToIntDecode(fileAttributes.mp3Attributes_u.currentTagHeader.size);
-        if(*(uint32_t*)fileAttributes.mp3Attributes_u.currentTagHeader.size > 1)    // Per id3 spec, atleast one byte for tags
-            tagFound = true;
+        memcpy(fileAttributes->mp3Attributes_u.currentTagHeader.size, fileInforRetrieve, 4);
+        fileAttributes->mp3Attributes_u.currentTagHeader.tagSizeUnPacked = tagSizeToIntDecode(fileAttributes->mp3Attributes_u.currentTagHeader.size);
+        if(*(uint32_t*)fileAttributes->mp3Attributes_u.currentTagHeader.size > 1)    // Per id3 spec, atleast one byte for tags
+            fileAttributes->frameCount.tagFound = true;
         break;
     default:
         // Nothing left to handle in the header...
@@ -34,7 +35,7 @@ void findTagHeader(FILE* mp3FilePtr, long fileIndex)
     }
 }
 
-void frameIDHandler(FILE* mp3FilePtr, char currentChar)
+void frameIDHandler(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, char currentChar)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
 
@@ -42,22 +43,22 @@ void frameIDHandler(FILE* mp3FilePtr, char currentChar)
     {
     case IPLS_FRAME:
         // Only one frame type with 'I'
-        fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameType = IPLS_FRAME;
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId, "IPLS", 4);
+        fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameType = IPLS_FRAME;
+        memcpy(fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameId, "IPLS", 4);
         printf("IPLS Frame found\n");
-        frameFound = true;
+        fileAttributes->frameCount.frameFound = true;
         break;
     case URL_FRAME:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
         printf("URL Frame found\n");
-        frameFound = true;
+        fileAttributes->frameCount.frameFound = true;
         break;
     case TEXT_FRAME:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 3);
-        fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[0] = TEXT_FRAME;
-        memcpy(&fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[1], fileInforRetrieve, 3);
+        fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameId[0] = TEXT_FRAME;
+        memcpy(&fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameId[1], fileInforRetrieve, 3);
         printf("Text Frame found\n");
-        frameFound = true;
+        fileAttributes->frameCount.frameFound = true;
         break;
     default:
         break;
@@ -104,7 +105,7 @@ typedef enum FRAME_TYPES_T
 }FRAME_TYPES;
  * */
 
-void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex)
+void decodeFrameHeader(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, long fileIndex, long frameIndex)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
     printf("frameIndex: %lu\n", fileIndex);
@@ -117,17 +118,17 @@ void decodeFrameHeader(FILE* mp3FilePtr, long fileIndex, long frameIndex)
     case FRAME_SIZE_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
         // No more weird size decoding :D
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize, fileInforRetrieve, 4);
+        memcpy(fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize, fileInforRetrieve, 4);
         printf("size individual fields: ");
         for(int i = 0; i < 4; ++i)
-            printf(" 0x%02X ", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
+            printf(" 0x%02X ", fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
         newLine();
-        if(*(uint32_t*)fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize > 1)    // Per id3 spec, atleast one byte for frames
-            validFrame = true;
+        if(*(uint32_t*)fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize > 1)    // Per id3 spec, atleast one byte for frames
+            fileAttributes->frameCount.validFrame = true;
         break;
     case FRAME_FLAGS_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 2);
-        memcpy(fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags, fileInforRetrieve, 2);
+        memcpy(fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags, fileInforRetrieve, 2);
         break;
     default:
         // Nothing left to handle in the header...

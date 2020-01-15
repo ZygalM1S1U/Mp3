@@ -6,12 +6,6 @@ bool programRunning = true;
 
 bool fileOpen = false;
 
-bool tagFound = false;
-
-bool frameFound = false;
-
-bool validFrame = false;
-
 /// @brief A function that inits the program with the intial values
 void initializeProgram(void);
 
@@ -49,6 +43,9 @@ void initializeProgram(void)
 {
     memset(fileAttributes.filename, 0u, MAX_FILENAME_SIZE);
     fileAttributes.fileSize = 0u;
+    fileAttributes.frameCount.tagFound = false;
+    fileAttributes.frameCount.frameFound = false;
+    fileAttributes.frameCount.validFrame = false;
 }
 
 void mp3FileOpen(char* fileName)
@@ -91,16 +88,16 @@ void mp3Parse(FILE* mp3FilePtr)
     while(c != EOF)
     {
         // Header retrival routine
-        if(fileIndex < MP3_FILE_ID_FRAME_SIZE && !tagFound)
+        if(fileIndex < MP3_FILE_ID_FRAME_SIZE && !fileAttributes.frameCount.tagFound)
         {
-            findTagHeader(mp3FilePtr, fileIndex);
+            findTagHeader(&fileAttributes, mp3FilePtr, fileIndex);
         }
-        else if(!frameFound)
+        else if(!fileAttributes.frameCount.frameFound)
         {
             printf("Searching for frame at file index: %lu with char %c\n", fileIndex, c);
-            frameIDHandler(mp3FilePtr, c);
+            frameIDHandler(&fileAttributes, mp3FilePtr, c);
 
-            if(frameFound)
+            if(fileAttributes.frameCount.frameFound)
             {
                 printf("File Index when setting a frame: %lu\n", fileIndex);
                 frameOffset = fileIndex-4;
@@ -111,7 +108,7 @@ void mp3Parse(FILE* mp3FilePtr)
         else
         {
             // Frame has been found, pull the frame header
-            decodeFrameHeader(mp3FilePtr, fileIndex, newFrameIndex);
+            decodeFrameHeader(&fileAttributes, mp3FilePtr, fileIndex, newFrameIndex);
             ++newFrameIndex;
         }
 
@@ -138,7 +135,7 @@ void printFileAttributes(void)
         // Print file size
         printf("File Size Reported from Ftell: %lu\n", fileAttributes.fileSize);
         newLine();
-        if(tagFound)
+        if(fileAttributes.frameCount.tagFound)
         {
             printf("Current Tag Information");
             newLine();
@@ -162,7 +159,7 @@ void printFileAttributes(void)
         }
         newLine();
 
-        if(validFrame)
+        if(fileAttributes.frameCount.validFrame)
         {
             printf("Current Frame Information: ");
             newLine();
