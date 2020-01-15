@@ -109,12 +109,9 @@ void decodeFrameHeader(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, long f
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
     printf("frameIndex: %lu\n", fileIndex);
-    printf("File Index - Frame Offset: %lu\n", frameIndex);
+    printf("Frame Offset: %lu\n", frameIndex);
     switch((MP3_FRAME_HEADER_INDICIES)frameIndex)
     {
-    case FRAME_IDENTIFICATION_INDEX:
-        // Already handled :)
-        break;
     case FRAME_SIZE_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
         // No more weird size decoding :D

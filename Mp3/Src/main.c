@@ -99,9 +99,8 @@ void mp3Parse(FILE* mp3FilePtr)
 
             if(fileAttributes.frameCount.frameFound)
             {
-                printf("File Index when setting a frame: %lu\n", fileIndex);
-                frameOffset = fileIndex-4;
-                newFrameIndex = fileIndex - frameOffset - 4;
+                fileIndex = ftell(mp3FilePtr);
+                newFrameIndex = 0;
                 printf("New Frame Index: %lu\n", newFrameIndex);
             }
         }
