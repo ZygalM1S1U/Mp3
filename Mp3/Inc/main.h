@@ -14,6 +14,20 @@
 /// @note  This should only be run at start-up
 static void printTime(void);
 
+/// @brief Creates a new line via printf
+static void newLine(void);
+
+/// @note This should be endianness safe...
+static int32_t unPackData(uint8_t* packedBuffer);
+
+/// @brief This prints the current tag information.
+/// @note This should be used for debugging only
+void printCurrentTag(void);
+
+/// @brief This prints the current frame information
+/// @note This should be used for debugging only
+void printCurrentFrame(void);
+
 // Static functions
 static void printTime(void)
 {
@@ -31,4 +45,9 @@ static void newLine(void)
     printf("\n");
 }
 
+/// @note This should be endianness safe...
+static int32_t unPackData(uint8_t* packedBuffer)
+{
+    return packedBuffer[0]<<24 | packedBuffer[1]<<16 | packedBuffer[2]<<8 | packedBuffer[3];
+}
 #endif  // _MAIN_H__

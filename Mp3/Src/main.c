@@ -35,6 +35,7 @@ int main(void)
         printf("Please type in the MP3 file you'd like to decode, make sure your directory is correct.\n");
         scanf("%s", &fileAttributes.filename);
         mp3FileOpen(fileAttributes.filename);
+        initializeProgram();
     }
     return 0;
 }
@@ -85,7 +86,7 @@ void mp3Parse(FILE* mp3FilePtr)
     newLine();
     char c = 0;
 
-    while(c != EOF)
+    while(fileIndex < fileAttributes.fileSize)
     {
         // Header retrival routine
         if(fileIndex < MP3_FILE_ID_FRAME_SIZE && !fileAttributes.frameCount.tagFound)
@@ -101,6 +102,7 @@ void mp3Parse(FILE* mp3FilePtr)
             {
                 fileIndex = ftell(mp3FilePtr);
                 newFrameIndex = 0;
+                printf("file Index %lu\n", fileIndex);
                 printf("New Frame Index: %lu\n", newFrameIndex);
             }
         }
@@ -114,6 +116,7 @@ void mp3Parse(FILE* mp3FilePtr)
 
         c = fgetc(mp3FilePtr);
         fileIndex = ftell(mp3FilePtr);
+        printf("File Index: %lu\n", fileIndex);
 
     }
     newLine();
@@ -134,55 +137,72 @@ void printFileAttributes(void)
         // Print file size
         printf("File Size Reported from Ftell: %lu\n", fileAttributes.fileSize);
         newLine();
-        if(fileAttributes.frameCount.tagFound)
-        {
-            printf("Current Tag Information");
-            newLine();
-            /// @section Current Tag Information
-            // Print the container version
-            printf("Container Version: 2.");
-            for(int j = 0; j < 2; ++j)
-                printf("%d", (int)fileAttributes.mp3Attributes_u.currentTagHeader.version[j]);
-            newLine();  // New line
+        printCurrentTag();
+        newLine();
+        printCurrentFrame();
 
-            // Print the current tag size
-            printf("Tag Size: 0x%08X\n", fileAttributes.mp3Attributes_u.currentTagHeader.tagSizeUnPacked);
+    }
+}
 
-            // Print tag flags
-            uint8_t unsynchronization, experimental, extendedHeader = 0u;
-            unsynchronization = fileAttributes.mp3Attributes_u.currentTagHeader.flags&1;
-            extendedHeader = (fileAttributes.mp3Attributes_u.currentTagHeader.flags>>1)&1;
-            experimental = (fileAttributes.mp3Attributes_u.currentTagHeader.flags>>2)&1;
-            printf("Tag Flags:\nUnsynchronization: 0x%02X\nExtended Header: 0x%02X\nExperimental: 0x%02X\n",
-                   unsynchronization, extendedHeader, experimental);
-        }
+void printCurrentTag(void)
+{
+    if(fileAttributes.frameCount.tagFound)
+    {
+        printf("Current Tag Information");
+        newLine();
+        /// @section Current Tag Information
+        // Print the container version
+        printf("Container Version: 2.");
+        for(int j = 0; j < 2; ++j)
+            printf("%d", (int)fileAttributes.mp3Attributes_u.currentTagHeader.version[j]);
+        newLine();  // New line
+
+        // Print the current tag size
+        printf("Tag Size: 0x%08X\n", fileAttributes.mp3Attributes_u.currentTagHeader.tagSizeUnPacked);
+
+        // Print tag flags
+        uint8_t unsynchronization, experimental, extendedHeader = 0u;
+        unsynchronization = fileAttributes.mp3Attributes_u.currentTagHeader.flags&1;
+        extendedHeader = (fileAttributes.mp3Attributes_u.currentTagHeader.flags>>1)&1;
+        experimental = (fileAttributes.mp3Attributes_u.currentTagHeader.flags>>2)&1;
+        printf("Tag Flags:\nUnsynchronization: 0x%02X\nExtended Header: 0x%02X\nExperimental: 0x%02X\n",
+               unsynchronization, extendedHeader, experimental);
+    }
+    else
+    {
+        printf("No tag has been found\n");
+    }
+}
+
+void printCurrentFrame(void)
+{
+    if(fileAttributes.frameCount.validFrame)
+    {
+        printf("Current Frame Information: ");
+        newLine();
+        /// @section Current Frame Information
+        // Print the frame ID
+        printf("Frame ID: ");
+        for(int k = 0; k < 4; ++k)
+            printf("%c", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[k]);
         newLine();
 
-        if(fileAttributes.frameCount.validFrame)
-        {
-            printf("Current Frame Information: ");
-            newLine();
-            /// @section Current Frame Information
-            // Print the frame ID
-            printf("Frame ID: ");
-            for(int k = 0; k < 4; ++k)
-                printf("%c", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameId[k]);
-            newLine();
+        // Print the frame size
+        printf("Frame Size: 0x%08X\n", fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.packedFrameSize);
 
-            // Print the frame size
-            printf("Frame Size: 0x%08X\n", *(uint32_t*)fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameSize);
-
-            // Print frame flags
-            uint8_t tagAlterPres, fileAlterPres, RO, Compression, Encryption, GI = 0u;
-            tagAlterPres = fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]&1;
-            fileAlterPres = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]>>1)&1;
-            RO = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]>>2)&1;
-            Compression = fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]&1;
-            Encryption =  (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]>>1)&1;
-            GI = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]>>2)&1;
-            printf("Frame Flags:\nTag Alter Preservation: 0x%02X\nFile Alter Preservation: 0x%02X\nRead-Only: 0x%02X\nCompression: 0x%02X\nEncryption: 0x%02X\nGrouping Identity: 0x%02X\n",
-                   tagAlterPres, fileAlterPres, RO, Compression, Encryption, GI);
-        }
-
+        // Print frame flags
+        uint8_t tagAlterPres, fileAlterPres, RO, Compression, Encryption, GI = 0u;
+        tagAlterPres = fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]&1;
+        fileAlterPres = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]>>1)&1;
+        RO = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[0]>>2)&1;
+        Compression = fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]&1;
+        Encryption =  (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]>>1)&1;
+        GI = (fileAttributes.mp3Attributes_u.currentFrame.currentFrameHeader.frameFlags[1]>>2)&1;
+        printf("Frame Flags:\nTag Alter Preservation: 0x%02X\nFile Alter Preservation: 0x%02X\nRead-Only: 0x%02X\nCompression: 0x%02X\nEncryption: 0x%02X\nGrouping Identity: 0x%02X\n",
+               tagAlterPres, fileAlterPres, RO, Compression, Encryption, GI);
+    }
+    else
+    {
+        printf("There is no valid frame to print\n");
     }
 }

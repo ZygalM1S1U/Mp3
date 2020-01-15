@@ -77,7 +77,11 @@ void getFieldInformation(FILE* mp3FilePtr, uint8_t* dataNeeded, uint8_t size)
     }
 
     // Rewind the file pointer
-    fseek(mp3FilePtr, 0, (int)fileOriginalSize);
+    if(fseek(mp3FilePtr, (-size), SEEK_CUR) != 0)
+    {
+        // File rewind failed.
+        printf("\n\n\nFile Rewind failed.\n\n\n");
+    }
 }
 
 void printFrameHandler(void)
@@ -108,10 +112,13 @@ typedef enum FRAME_TYPES_T
 void decodeFrameHeader(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, long fileIndex, long frameIndex)
 {
     uint8_t fileInforRetrieve[MP3_MAX_ID_FIELD_SIZE] = "";
-    printf("frameIndex: %lu\n", fileIndex);
-    printf("Frame Offset: %lu\n", frameIndex);
+    //printf("frameIndex: %lu\n", fileIndex);
+    //("Frame Offset: %lu\n", frameIndex);
     switch((MP3_FRAME_HEADER_INDICIES)frameIndex)
     {
+    case FRAME_IDENTIFICATION_INDEX:
+        // It has already been stored.
+        break;
     case FRAME_SIZE_INDEX:
         getFieldInformation(mp3FilePtr, fileInforRetrieve, 4);
         // No more weird size decoding :D
@@ -120,7 +127,8 @@ void decodeFrameHeader(fileAttributes_ *fileAttributes, FILE* mp3FilePtr, long f
         for(int i = 0; i < 4; ++i)
             printf(" 0x%02X ", fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize[i]);
         newLine();
-        if(*(uint32_t*)fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize > 1)    // Per id3 spec, atleast one byte for frames
+        fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.packedFrameSize = unPackData(fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.frameSize);
+        if(fileAttributes->mp3Attributes_u.currentFrame.currentFrameHeader.packedFrameSize > 1)    // Per id3 spec, atleast one byte for frames
             fileAttributes->frameCount.validFrame = true;
         break;
     case FRAME_FLAGS_INDEX:

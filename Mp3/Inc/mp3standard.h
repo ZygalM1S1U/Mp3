@@ -60,9 +60,9 @@ typedef enum MP3_TAG_HEADER_INDICIES_T
 
 typedef enum MP3_FRAME_HEADER_INDICIES_T
 {
-    //FRAME_IDENTIFICATION_INDEX = 0,
-    FRAME_SIZE_INDEX = 0,
-    FRAME_FLAGS_INDEX = 4
+    FRAME_IDENTIFICATION_INDEX = 0,
+    FRAME_SIZE_INDEX = 2,
+    FRAME_FLAGS_INDEX = 6
 }MP3_FRAME_HEADER_INDICIES;
 
 typedef enum TAG_FLAGS_T
@@ -85,6 +85,7 @@ typedef enum FRAME_FLAGS_T
 
 // This is the standard for ip3v2.3
 /*
+ * http://id3.org/id3v2.3.0
  *
  * 4.20    AENC    [[#sec4.20|Audio encryption]]
 4.15    APIC    [#sec4.15 Attached picture]
@@ -213,10 +214,11 @@ typedef struct __attribute__((__packed__)) mp3CurrentFrameHeader_t
      *                                      0    Frame does not contain group information
      *                                      1    Frame contains group information
      */
-    uint8_t frameId[4];     // Frame-ID    -> 4 bytes
-    uint8_t frameSize[4];   // Frame Size  -> 4 bytes
-    uint8_t frameFlags[2];  // Frame flags -> 2 bytes
-    FRAME_TYPES frameType;  // Frame type for grouping
+    uint8_t frameId[4];       // Frame-ID    -> 4 bytes
+    uint8_t frameSize[4];     // Frame Size  -> 4 bytes
+    uint8_t frameFlags[2];    // Frame flags -> 2 bytes
+    FRAME_TYPES frameType;    // Frame type for grouping
+    uint32_t packedFrameSize; // Will match endianness of system
 }mp3CurrentFrameHeader;
 
 typedef struct __attribute__((__packed__)) mp3CurrentFrame_t
